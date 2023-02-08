@@ -58,6 +58,20 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	/*-------------------New content----------------------*/
+	/** The player's maximum health, which is also the health at birth. */
+	UPROPERTY(EditDefaultsOnly,Category="Health")  // 不进行复制的默认属性
+	float MaxHealth;
+
+	/** The player's current health,If it goes down to zero, it's dead. */
+	UPROPERTY(ReplicatedUsing=OnRep_CurrentHealth) // OnRep_ 是命名规范前缀，没有也可以，但最好带上，便于识别。
+	float CurrentHealth;
+
+	/** RepNotify,Used to synchronize changes made to the current health value. */
+	UFUNCTION()
+	void OnRep_CurrentHealth();  // 在各客户端中同步玩家当前血量的代理函数
+	
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -68,5 +82,15 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+
+	/*-------------------New content----------------------*/
+	//////////////////////////////////////////////////////////////////////////
+	// replicated attribute
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** 响应要更新的生命值。修改后，立即在服务器上调用，并在客户端上调用以响应RepNotify*/
+	void OnHealthUpdate();
 };
+
 

@@ -8,6 +8,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Engine/Engine.h"
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // AMultiplayerGame_DemoCharacter
@@ -45,10 +49,20 @@ AMultiplayerGame_DemoCharacter::AMultiplayerGame_DemoCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+
+	/*-------------------New content----------------------*/
+	// The player's maximum health
+	MaxHealth = 100.0f;
+
+	// The player's Current health
+	CurrentHealth = MaxHealth; 
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Input
+
 
 void AMultiplayerGame_DemoCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -75,7 +89,6 @@ void AMultiplayerGame_DemoCharacter::SetupPlayerInputComponent(class UInputCompo
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AMultiplayerGame_DemoCharacter::OnResetVR);
 }
-
 
 void AMultiplayerGame_DemoCharacter::OnResetVR()
 {
@@ -137,4 +150,52 @@ void AMultiplayerGame_DemoCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
 	}
+}
+
+/*-------------------New content----------------------*/
+
+void AMultiplayerGame_DemoCharacter::OnRep_CurrentHealth()
+{
+	OnHealthUpdate();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// replicated attribute
+//GetLifetimeReplicatedProps 函数负责复制我们使用 Replicated 说明符指派的任何属性，并可用于配置属性的复制方式。
+//这里使用 CurrentHealth 的最基本实现。一旦添加更多需要复制的属性，也必须添加到此函数。
+void AMultiplayerGame_DemoCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);  // 必须调用 GetLifetimeReplicatedProps 的 Super 版本，否则从Actor父类继承的属性不会复制，即便该父类指定要复制。
+
+	// replicate the current health.
+	DOREPLIFETIME(AMultiplayerGame_DemoCharacter, CurrentHealth);
+}
+
+// OnHealthUpdate 不复制，需要在所有设备上手动调用。
+void AMultiplayerGame_DemoCharacter::OnHealthUpdate()
+{
+	//客户端特定的功能
+	if (IsLocallyControlled())
+	{
+		FString healthMessage = FString::Printf(TEXT("您现在的生命值剩余为 %f。"), CurrentHealth);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, healthMessage);  // 添加屏幕调试消息
+
+		if (CurrentHealth <= 0)
+		{
+			FString deathMessage = FString::Printf(TEXT("你被杀死了"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f,FColor::Red,deathMessage);
+		}
+	}
+
+	// 服务器特定的功能
+	if(GetLocalRole() == ROLE_Authority)
+	{
+		FString healthMessage = FString::Printf(TEXT("%s 现在的生命值剩余为 %f。"), *GetFName().ToString(),CurrentHealth);
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
+	}
+
+	//在所有机器上都执行的函数。 
+	/*  
+		因任何因伤害或死亡而产生的特殊功能都应放在这里。 
+	*/
 }
