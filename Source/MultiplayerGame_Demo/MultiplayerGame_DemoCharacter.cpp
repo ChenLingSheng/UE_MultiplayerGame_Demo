@@ -199,3 +199,22 @@ void AMultiplayerGame_DemoCharacter::OnHealthUpdate()
 		因任何因伤害或死亡而产生的特殊功能都应放在这里。 
 	*/
 }
+
+void AMultiplayerGame_DemoCharacter::SetCurrentHealth(float healrhValue)
+{
+	if(GetLocalRole() == ROLE_Authority)
+	{
+		CurrentHealth = FMath::Clamp(healrhValue, 0.f, MaxHealth);  // Clamp(x, min, max) 在min, max区间取值，x的值在区间时返回 x；x<min 时返回min；x>max 时返回max
+		OnHealthUpdate();
+	}
+}
+
+float AMultiplayerGame_DemoCharacter::TakeDamage(float DamageTaken, FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	//return Super::TakeDamage(DamageTaken, DamageEvent, EventInstigator, DamageCauser);
+	float damageApplied = CurrentHealth - DamageTaken;
+	SetCurrentHealth(damageApplied);
+	return damageApplied;
+}
+
