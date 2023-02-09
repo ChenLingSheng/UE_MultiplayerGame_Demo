@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/Engine.h"
+#include "ThirdPersonMPProjectile.h"
 
 
 
@@ -55,7 +56,13 @@ AMultiplayerGame_DemoCharacter::AMultiplayerGame_DemoCharacter()
 	MaxHealth = 100.0f;
 
 	// The player's Current health
-	CurrentHealth = MaxHealth; 
+	CurrentHealth = MaxHealth;
+
+	// 初始化投射物类
+	ProjectileClass = AThirdPersonMPProjectile::StaticClass();
+	// 初始化射速
+	FireRate = 0.25f;
+	bIsFiringWeapon = false;
 
 
 }
@@ -88,6 +95,9 @@ void AMultiplayerGame_DemoCharacter::SetupPlayerInputComponent(class UInputCompo
 
 	// VR headset functionality
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AMultiplayerGame_DemoCharacter::OnResetVR);
+
+	// 处理发射投射物
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMultiplayerGame_DemoCharacter::StartFire);
 }
 
 void AMultiplayerGame_DemoCharacter::OnResetVR()
@@ -157,6 +167,37 @@ void AMultiplayerGame_DemoCharacter::MoveRight(float Value)
 void AMultiplayerGame_DemoCharacter::OnRep_CurrentHealth()
 {
 	OnHealthUpdate();
+}
+
+// 启用开火
+void AMultiplayerGame_DemoCharacter::StartFire()
+{
+	if(!bIsFiringWeapon)
+	{
+		bIsFiringWeapon = true;
+		UWorld* World = GetWorld();
+		World->GetTimerManager().SetTimer(FiringTimer, this, &AMultiplayerGame_DemoCharacter::StopFire, FireRate, false);
+		HandleFire();
+	}
+}
+
+// 禁用开火
+void AMultiplayerGame_DemoCharacter::StopFire()
+{
+	bIsFiringWeapon = false;
+}
+
+// 控制开火指令的实施
+void AMultiplayerGame_DemoCharacter::HandleFire_Implementation()  // 因为 HandleFire 是服务器RPC，其在CPP文件中的实现必须在函数名后面添加后缀 _Implementation。
+{
+	FVector spawnLocation = GetActorLocation() + (GetControlRotation().Vector()* 100.0f) + (GetActorUpVector()* 50.0f);
+	FRotator SpawnRotator = GetControlRotation();  // 根据控制器的旋转而旋转
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Instigator = GetInstigator();
+	SpawnParameters.Owner = this;
+
+	AThirdPersonMPProjectile* SpawnedProjectile = GetWorld()->SpawnActor<AThirdPersonMPProjectile>(spawnLocation, SpawnRotator,SpawnParameters);
 }
 
 //////////////////////////////////////////////////////////////////////////

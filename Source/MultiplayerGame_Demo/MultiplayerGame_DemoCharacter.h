@@ -70,7 +70,32 @@ protected:
 	/** RepNotify,Used to synchronize changes made to the current health value. */
 	UFUNCTION()
 	void OnRep_CurrentHealth();  // 在各客户端中同步玩家当前血量的代理函数
-	
+
+	// 投射物类变量
+	UPROPERTY(EditDefaultsOnly, Category="Gameplay|Projectile")
+	TSubclassOf<class AThirdPersonMPProjectile> ProjectileClass;
+
+	// 射击之间的延迟，单位为秒。用于控制测试发射物的射击速度，还可防止服务器函数的溢出导致将SpawnProjectile直接绑定至输入。
+	UPROPERTY(EditDefaultsOnly, Category="Gameplay")
+	float FireRate;
+
+	// 若为true，则正在发射投射物。
+	bool bIsFiringWeapon;
+
+	// 用于启动武器射击的函数。
+	UFUNCTION(BlueprintCallable, Category="GamePlay")
+	void StartFire();
+
+	// 用于结束武器射击的函数。一旦调用这段代码，玩家可再次使用StartFire。
+	UFUNCTION(BlueprintCallable, Category="Gameplay")
+	void StopFire();
+
+	// 用于生成投射物的服务器函数。
+	UFUNCTION(Server, Reliable)  // Reliable说明符 启用RPC 
+	void HandleFire();
+
+	// 定时器句柄，用于提供生成间隔时间内的射速延迟。
+	FTimerHandle FiringTimer;
 
 protected:
 	// APawn interface

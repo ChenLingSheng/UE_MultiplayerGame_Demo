@@ -25,6 +25,13 @@ AThirdPersonMPProjectile::AThirdPersonMPProjectile()
 	SphereComponent->SetCollisionProfileName(TEXT("BlockAllDynamic"));  // 碰撞检测预设：全部堵塞
 	RootComponent = SphereComponent;
 
+	// 在击中事件上注册此投射物撞击函数。
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		SphereComponent->OnComponentHit.AddDynamic(this, &AThirdPersonMPProjectile::OnProjectileImpact);
+	}
+
+	
 	// 定义将作为视觉呈现的网格体。
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultMesh(TEXT("/Game/StarterContent/Shapes/Shape_Sphere.Shape_Sphere"));
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
@@ -57,7 +64,30 @@ AThirdPersonMPProjectile::AThirdPersonMPProjectile()
 	// 定义伤害类型及伤害数值
 	DamageType = UDamageType::StaticClass();
 	Damage = 10.0f;
+
+	
 }
+
+void AThirdPersonMPProjectile::Destroyed()
+{
+	// Super::Destroyed();  // 此处不继承父类的逻辑，只使用以下简单逻辑进行演示【重写】
+	FVector spawnLocation = GetActorLocation();
+	UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, spawnLocation, FRotator::ZeroRotator, true, EPSCPoolMethod::AutoRelease);
+}
+
+// 若撞击对象是有效Actor，将调用 ApplyPointDamage 函数，在碰撞处对该对象造成伤害。同时，无论撞击表面是什么，任何碰撞都将摧毁该Actor，导致爆炸效果显示。
+void AThirdPersonMPProjectile::OnProjectileImpact(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if(OtherActor)
+	{
+		UGameplayStatics::ApplyPointDamage(OtherActor, Damage, NormalImpulse, Hit, GetInstigator()->Controller, this, DamageType);
+	}
+	Destroy();  // 销毁 Actor 的内置函数
+}
+
+
+
 
 // Called when the game starts or when spawned
 void AThirdPersonMPProjectile::BeginPlay()

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ThirdPersonMPProjectile.generated.h"
 
+
 UCLASS()
 class MULTIPLAYERGAME_DEMO_API AThirdPersonMPProjectile : public AActor
 {
@@ -38,6 +39,13 @@ public:
 	// 此投射物造成的伤害。
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Damage")
 	float Damage;
+
+	// 投射物Actor被摧毁时调用此函数
+	virtual void Destroyed() override;
+
+	// 投射物撞击对象检测，这是在投射物撞击对象时要调用的函数。
+	UFUNCTION(Category="Projectile")
+	void OnProjectileImpact(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
 
 protected:
