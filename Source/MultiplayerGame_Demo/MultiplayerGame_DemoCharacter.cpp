@@ -40,7 +40,7 @@ AMultiplayerGame_DemoCharacter::AMultiplayerGame_DemoCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
 	// Create a follow camera
@@ -220,12 +220,6 @@ void AMultiplayerGame_DemoCharacter::OnHealthUpdate()
 	{
 		FString healthMessage = FString::Printf(TEXT("您现在的生命值剩余为 %f。"), CurrentHealth);
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Black, healthMessage);  // 添加屏幕调试消息
-
-		if (CurrentHealth <= 0)
-		{
-			FString deathMessage = FString::Printf(TEXT("你被杀死了"));
-			GEngine->AddOnScreenDebugMessage(-1, 5.f,FColor::Red,deathMessage);
-		}
 	}
 
 	// 服务器特定的功能
@@ -235,10 +229,18 @@ void AMultiplayerGame_DemoCharacter::OnHealthUpdate()
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, healthMessage);
 	}
 
+	
 	//在所有机器上都执行的函数。 
 	/*  
 		因任何因伤害或死亡而产生的特殊功能都应放在这里。 
 	*/
+	// 角色死亡提示及销毁角色Actor
+	if (CurrentHealth == 0)
+	{
+		FString deathMessage = FString::Printf(TEXT("%s 被杀死了"), *GetFName().ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 5.f,FColor::Red,deathMessage);
+		Destroy();
+	}
 }
 
 void AMultiplayerGame_DemoCharacter::SetCurrentHealth(float healrhValue)

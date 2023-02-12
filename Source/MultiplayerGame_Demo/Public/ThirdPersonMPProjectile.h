@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "ThirdPersonMPProjectile.generated.h"
 
-
 UCLASS()
 class MULTIPLAYERGAME_DEMO_API AThirdPersonMPProjectile : public AActor
 {

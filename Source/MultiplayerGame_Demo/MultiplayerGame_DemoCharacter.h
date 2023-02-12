@@ -132,6 +132,7 @@ public:
 	/** 承受伤害的事件。从APawn覆盖。*/
 	UFUNCTION(BlueprintCallable, Category="Health")
 	float TakeDamage(float DamageTaken, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	
 };
 
 
